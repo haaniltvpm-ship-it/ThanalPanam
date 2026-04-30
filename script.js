@@ -3,7 +3,7 @@
 // ==========================================
 
 // Configuration - REPLACE WITH YOUR APPS SCRIPT DEPLOYMENT URL
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyksdeTqlW58x7Y72VlDAp5Nl8rCatYpHwsEspjM_n89ZqUofZTEwRAgpGr5VSh_qz9wA/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUOh91TbNs3b4glrglw3t846EzCMyoD0cXWFMojiNx3XMe17ou5Jk1HX1HmTvdn5kkAw/exec";
 
 // Application State
 let allResidents = [];
