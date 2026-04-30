@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanal Panam - Fee Collection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">🏢</div>
+            <h1>Thanal Panam</h1>
+            <p class="subtitle">Resident Association Payment Portal</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="showTab('recordPayment')">
+                <span class="tab-icon">💳</span>
+                <span class="tab-label">Record Payment</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('viewHistory')">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">History</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('checkBalance')">
+                <span class="tab-icon">💰</span>
+                <span class="tab-label">Balance</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('admin')">
+                <span class="tab-icon">⚙️</span>
+                <span class="tab-label">Admin</span>
+            </button>
+        </nav>
+
+        <!-- Tab 1: Record Payment -->
+        <div id="recordPayment" class="tab-content active">
+            <h2>💳 Record New Payment</h2>
+            <form id="paymentForm">
+                <!-- Resident Selection -->
+                <div class="form-group">
+                    <label for="residentName">Resident Name *</label>
+                    <select id="residentName" required onchange="onResidentSelected()">
+                        <option value="">-- Select Resident --</option>
+                    </select>
+                    <small id="residentInfo" class="info-text"></small>
+                </div>
+
+                <!-- Amount -->
+                <div class="form-group">
+                    <label for="amount">Amount (₹) *</label>
+                    <input 
+                        type="number" 
+                        id="amount" 
+                        placeholder="Enter amount" 
+                        step="0.01"
+                        min="0"
+                        required
+                    >
+                </div>
+
+                <!-- Payment Type -->
+                <div class="form-group">
+                    <label for="paymentType">Payment Type *</label>
+                    <select id="paymentType" required onchange="onPaymentTypeChanged()">
+                        <option value="">-- Select Type --</option>
+                        <option value="Monthly Fee">Monthly Fee</option>
+                        <option value="Donation">Donation</option>
+                    </select>
+                </div>
+
+                <!-- Month/Year for Monthly Fees -->
+                <div class="form-group hidden" id="monthYearGroup">
+                    <label for="monthYear">Month/Year *</label>
+                    <select id="monthYear">
+                        <option value="">-- Select Month --</option>
+                    </select>
+                    <small class="hint-text">📅 Select the month for which fee is being paid</small>
+                </div>
+
+                <!-- Purpose for Donations -->
+                <div class="form-group hidden" id="purposeGroup">
+                    <label for="donationPurpose">Purpose of Donation *</label>
+                    <select id="donationPurpose">
+                        <option value="">-- Select Purpose --</option>
+                    </select>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod">
+                        <option value="Google Pay">Google Pay</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Cheque">Cheque</option>
+                    </select>
+                </div>
+
+                <!-- Payment Slip Upload -->
+                <div class="form-group">
+                    <label for="paymentSlip">Payment Slip / Receipt (Optional)</label>
+                    <div class="file-upload-box">
+                        <input 
+                            type="file" 
+                            id="paymentSlip" 
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            onchange="previewFile()"
+                        >
+                        <label for="paymentSlip" class="file-label">
+                            <span>📎 Click to upload or drag file</span>
+                            <span class="file-info">(JPG, PNG, PDF - Max 5MB)</span>
+                        </label>
+                        <div id="filePreview" class="file-preview"></div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-group">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea 
+                        id="notes" 
+                        placeholder="Any additional information"
+                        rows="2"
+                    ></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-primary btn-large">
+                    ✓ Record Payment
+                </button>
+                <div id="formMessage" class="message"></div>
+            </form>
+        </div>
+
+        <!-- Tab 2: View History & Verification -->
+        <div id="viewHistory" class="tab-content">
+            <h2>📋 Transaction History</h2>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-row">
+                    <input 
+                        type="text" 
+                        id="filterName" 
+                        placeholder="🔍 Filter by name"
+                        onkeyup="filterTable()"
+                        class="filter-input"
+                    >
+                    <select id="filterStatus" onchange="filterTable()" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="Pending">⏳ Pending</option>
+                        <option value="Verified">✓ Verified</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="downloadCSV()">📥 Download CSV</button>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="table-container">
+                <table id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Amount (₹)</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Check Balance -->
+        <div id="checkBalance" class="tab-content">
+            <h2>💰 Check Resident Balance</h2>
+            
+            <div class="balance-input-section">
+                <div class="form-group">
+                    <label for="checkBalanceName">Select Resident</label>
+                    <select id="checkBalanceName" required>
+                        <option value="">-- Select Resident --</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="getBalance()">Check Balance</button>
+            </div>
+
+            <!-- Balance Display -->
+            <div id="balanceResult" class="balance-card hidden">
+                <div class="balance-header">
+                    <h3 id="balanceName"></h3>
+                </div>
+                <div class="balance-content">
+                    <div class="balance-row">
+                        <span class="balance-label">Monthly Fees (Total):</span>
+                        <span class="balance-value">₹<span id="balanceTotalFees">0</span></span>
+                    </div>
+                    <div class="balance-row">
+                        <span class="balance-label">Monthly Fees (Verified):</span>
+                        <span class="balance-value verified">✓ ₹<span id="balanceVerifiedFees">0</span></span>
+                    </div>
+                    <div class="balance-row">
+                        <span class="balance-label">Donations (Total):</span>
+                        <span class="balance-value">₹<span id="balanceTotalDonations">0</span></span>
+                    </div>
+                    <div class="balance-row">
+                        <span class="balance-label">Donations (Verified):</span>
+                        <span class="balance-value verified">✓ ₹<span id="balanceVerifiedDonations">0</span></span>
+                    </div>
+                    <div class="balance-row total">
+                        <span class="balance-label">Total Amount:</span>
+                        <span class="balance-value">₹<span id="balanceTotal">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Admin Dashboard -->
+        <div id="admin" class="tab-content">
+            <h2>⚙️ Admin Dashboard</h2>
+
+            <!-- Admin Authentication (Optional) -->
+            <div id="adminAuthSection">
+                <div class="form-group">
+                    <label for="treasurerName">Treasurer Name:</label>
+                    <input 
+                        type="text" 
+                        id="treasurerName" 
+                        placeholder="Enter your name"
+                    >
+                </div>
+                <button class="btn-primary" onclick="unlockAdmin()">Unlock Admin Panel</button>
+            </div>
+
+            <!-- Admin Content (Hidden until unlocked) -->
+            <div id="adminContent" class="hidden">
+                <!-- Summary Cards -->
+                <div class="dashboard-summary">
+                    <div class="summary-card">
+                        <div class="summary-icon">📊</div>
+                        <div class="summary-info">
+                            <h4>Total Received</h4>
+                            <p id="dashTotalAmount" class="summary-value">₹0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card verified">
+                        <div class="summary-icon">✓</div>
+                        <div class="summary-info">
+                            <h4>Verified</h4>
+                            <p id="dashVerifiedAmount" class="summary-value">₹0</p>
+                        </div>
+                    </div>
+                    <div class="summary-card pending">
+                        <div class="summary-icon">⏳</div>
+                        <div class="summary-info">
+                            <h4>Pending</h4>
+                            <p id="dashPendingAmount" class="summary-value">₹0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Tabs -->
+                <div class="report-tabs">
+                    <button class="report-tab-btn active" onclick="showReport('summary')">Summary</button>
+                    <button class="report-tab-btn" onclick="showReport('datewise')">Date-wise</button>
+                    <button class="report-tab-btn" onclick="showReport('monthwise')">Monthly Fees</button>
+                    <button class="report-tab-btn" onclick="showReport('namewise')">Name-wise</button>
+                    <button class="report-tab-btn" onclick="showReport('pending')">Pending Payments</button>
+                </div>
+
+                <!-- Summary Report -->
+                <div id="summaryReport" class="report-section active">
+                    <h3>📊 Summary Report</h3>
+                    <div class="summary-stats">
+                        <div class="stat-box">
+                            <span class="stat-label">Total Transactions:</span>
+                            <span class="stat-value" id="statTotalTxn">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Verified Transactions:</span>
+                            <span class="stat-value" id="statVerifiedTxn">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Pending Transactions:</span>
+                            <span class="stat-value" id="statPendingTxn">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date-wise Report -->
+                <div id="datewiseReport" class="report-section hidden">
+                    <h3>📅 Date-wise Report</h3>
+                    <div class="report-filters">
+                        <input type="date" id="reportStartDate" class="filter-input">
+                        <input type="date" id="reportEndDate" class="filter-input">
+                        <button class="btn-secondary" onclick="loadDatewiseReport()">🔄 Load Report</button>
+                    </div>
+                    <div id="datewiseReportContent" class="report-content"></div>
+                </div>
+
+                <!-- Monthly Fees Report -->
+                <div id="monthwiseReport" class="report-section hidden">
+                    <h3>📅 Monthly Fees Collection Report</h3>
+                    <button class="btn-secondary" onclick="loadMonthwiseReport()">🔄 Load Report</button>
+                    <div id="monthwiseReportContent" class="report-content"></div>
+                </div>
+
+                <!-- Name-wise Report -->
+                <div id="namewiseReport" class="report-section hidden">
+                    <h3>👥 Name-wise Report</h3>
+                    <button class="btn-secondary" onclick="loadNamewiseReport()">🔄 Load Report</button>
+                    <div id="namewiseReportContent" class="report-content"></div>
+                </div>
+
+                <!-- Pending Payments -->
+                <div id="pendingReport" class="report-section hidden">
+                    <h3>⏳ Pending Payments for Verification</h3>
+                    <div id="pendingPaymentsContent" class="report-content"></div>
+                </div>
+
+                <!-- Verification Modal -->
+                <div id="verificationModal" class="modal hidden">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>✓ Verify Payment</h3>
+                            <button class="modal-close" onclick="closeVerificationModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="txn-details">
+                                <p><strong>Transaction ID:</strong> <span id="modalTxnId"></span></p>
+                                <p><strong>Resident:</strong> <span id="modalTxnName"></span></p>
+                                <p><strong>Amount:</strong> ₹<span id="modalTxnAmount"></span></p>
+                                <p><strong>Type:</strong> <span id="modalTxnType"></span></p>
+                                <p><strong>Date:</strong> <span id="modalTxnDate"></span></p>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="btn-primary" onclick="confirmVerification()">✓ Verify Payment</button>
+                                <button class="btn-secondary" onclick="closeVerificationModal()">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Last Updated: <span id="lastUpdate">-</span></p>
+            <p style="font-size: 11px; color: #999;">
+                🔒 All data is stored securely in Google Sheets | Thanal Panam © 2026
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
