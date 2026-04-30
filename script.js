@@ -3,7 +3,7 @@
 // ==========================================
 
 // Configuration - REPLACE WITH YOUR APPS SCRIPT DEPLOYMENT URL
-const APPS_SCRIPT_URL = "https://script.googleapis.com/macros/d/YOUR_DEPLOYMENT_ID/useweb";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMeooc3VqWqziQqliqDqnUsBG4exTh897UchOKSJ89GkqVixgHpS16ybNRZo7MzoQOwg/exec";
 
 // Application State
 let allResidents = [];
