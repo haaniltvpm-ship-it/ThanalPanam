@@ -225,12 +225,9 @@
 
         <!-- Tab 4: Admin Dashboard -->
         <div id="admin" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>⚙️ Admin Dashboard</h2>
-                <button id="adminLogoutBtn" class="btn-danger hidden" onclick="logoutAdmin()">🚪 Logout</button>
-            </div>
+            <h2>⚙️ Admin Dashboard</h2>
 
-            <!-- Admin Authentication (Optional) -->
+            <!-- Admin Authentication -->
             <div id="adminAuthSection">
                 <div class="form-group">
                     <label for="treasurerName">Treasurer Name:</label>
@@ -248,8 +245,11 @@
                         placeholder="Enter password"
                     >
                 </div>
-                <button class="btn-primary" onclick="unlockAdmin()">Unlock Admin Panel</button>
+                <button class="btn-primary" onclick="unlockAdmin()">🔓 Unlock Admin Panel</button>
             </div>
+
+            <!-- Logout Button -->
+            <button id="adminLogoutBtn" class="btn-danger" onclick="logoutAdmin()" style="display: none; margin-bottom: 20px;">🚪 Logout</button>
 
             <!-- Admin Content (Hidden until unlocked) -->
             <div id="adminContent" class="hidden">
@@ -280,11 +280,11 @@
 
                 <!-- Report Tabs -->
                 <div class="report-tabs">
-                    <button class="report-tab-btn active" onclick="showReport('summary')">Summary</button>
-                    <button class="report-tab-btn" onclick="showReport('datewise')">Date-wise</button>
-                    <button class="report-tab-btn" onclick="showReport('monthwise')">Monthly Fees</button>
-                    <button class="report-tab-btn" onclick="showReport('namewise')">Name-wise</button>
-                    <button class="report-tab-btn" onclick="showReport('pending')">Pending Payments</button>
+                    <button class="report-tab-btn active" data-report="summary">Summary</button>
+                    <button class="report-tab-btn" data-report="datewise">Date-wise</button>
+                    <button class="report-tab-btn" data-report="monthwise">Monthly Fees</button>
+                    <button class="report-tab-btn" data-report="namewise">Name-wise</button>
+                    <button class="report-tab-btn" data-report="pending">Pending Payments</button>
                 </div>
 
                 <!-- Summary Report -->
