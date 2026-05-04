@@ -33,24 +33,12 @@ function setupEventListeners() {
 }
 
 function setupReportTabListeners() {
-    const reportTabBtns = document.querySelectorAll('.report-tab-btn');
-    reportTabBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
+    const reportButtons = document.querySelectorAll('.report-tab-btn');
+    reportButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
             e.preventDefault();
-            const reportType = this.textContent.toLowerCase().trim();
-            
-            // Map button text to report type
-            if (this.textContent.includes('Summary')) {
-                showReport('summary');
-            } else if (this.textContent.includes('Date-wise')) {
-                showReport('datewise');
-            } else if (this.textContent.includes('Monthly')) {
-                showReport('monthwise');
-            } else if (this.textContent.includes('Name-wise')) {
-                showReport('namewise');
-            } else if (this.textContent.includes('Pending')) {
-                showReport('pending');
-            }
+            const reportType = this.getAttribute('data-report');
+            showReport(reportType);
         });
     });
 }
@@ -91,9 +79,7 @@ function showTab(tabName) {
     if (tabName === 'viewHistory') {
         loadTransactions();
     } else if (tabName === 'admin') {
-        if (adminMode) {
-            loadAdminDashboard();
-        }
+        loadAdminDashboard();
     }
 }
 
@@ -622,7 +608,7 @@ function unlockAdmin() {
     adminMode = true;
     document.getElementById('adminAuthSection').style.display = 'none';
     document.getElementById('adminContent').classList.remove('hidden');
-    document.getElementById('adminLogoutBtn').classList.remove('hidden');
+    document.getElementById('adminLogoutBtn').style.display = 'block';
     loadAdminDashboard();
     showMessage(`✓ Welcome, ${treasurerName}!`, 'success');
 }
@@ -641,40 +627,44 @@ function logoutAdmin() {
     // Hide admin content
     document.getElementById('adminContent').classList.add('hidden');
     document.getElementById('adminAuthSection').style.display = 'block';
-    document.getElementById('adminLogoutBtn').classList.add('hidden');
+    document.getElementById('adminLogoutBtn').style.display = 'none';
     
     showMessage('✓ Logged out successfully', 'success');
 }
 
 // ==========================================
-// REPORT FUNCTIONS
+// REPORT FUNCTIONS - FIXED
 // ==========================================
 
 function showReport(reportType) {
     console.log('Showing report:', reportType);
     
     // Hide all reports
-    document.querySelectorAll('.report-section').forEach(section => {
+    const allReports = document.querySelectorAll('.report-section');
+    allReports.forEach(section => {
         section.classList.add('hidden');
     });
 
     // Remove active class from all buttons
-    document.querySelectorAll('.report-tab-btn').forEach(btn => {
+    const allButtons = document.querySelectorAll('.report-tab-btn');
+    allButtons.forEach(btn => {
         btn.classList.remove('active');
     });
 
     // Show selected report
-    const reportElement = document.getElementById(reportType + 'Report');
-    if (reportElement) {
-        reportElement.classList.remove('hidden');
+    const reportSection = document.getElementById(reportType + 'Report');
+    if (reportSection) {
+        reportSection.classList.remove('hidden');
     }
-    
-    // Mark button as active
-    event.currentTarget.classList.add('active');
 
-    // Load report data
+    // Add active class to clicked button
+    const activeButton = document.querySelector(`.report-tab-btn[data-report="${reportType}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+
+    // Load report data if needed
     if (reportType === 'datewise') {
-        // Set default dates
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         document.getElementById('reportStartDate').valueAsDate = firstDay;
