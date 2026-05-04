@@ -5,7 +5,7 @@
 // Configuration - REPLACE WITH YOUR APPS SCRIPT DEPLOYMENT URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUOh91TbNs3b4glrglw3t846EzCMyoD0cXWFMojiNx3XMe17ou5Jk1HX1HmTvdn5kkAw/exec";
 
-// Admin Password - CHANGE THIS TO YOUR DESIRED PASSWORD
+// Admin Password
 const ADMIN_PASSWORD = "admin123";
 
 // Application State
@@ -466,8 +466,6 @@ function displayPendingPayments() {
     const pending = allTransactions.filter(t => t.status === 'Pending');
     const container = document.getElementById('pendingPaymentsContent');
     
-    console.log('Pending transactions:', pending);
-    
     if (pending.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 20px;">✓ All payments verified!</p>';
         return;
@@ -548,7 +546,7 @@ async function confirmVerification() {
             updateLastUpdate();
 
             // Send WhatsApp notification
-            if (result.data && result.data.phone) {
+            if (result.data.phone) {
                 showWhatsAppOption(result.data);
             }
         } else {
@@ -562,52 +560,64 @@ async function confirmVerification() {
 
 function showWhatsAppOption(data) {
     const message = `Hello ${data.residentName}, your payment of ₹${data.amount} has been verified and received. Thank you!`;
-    const phoneNumber = data.phone.replace(/[^0-9]/g, '');
+    const whatsappLink = `https://wa.me/${data.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
     
-    // Add country code if not present (assumes India +91)
-    const fullPhoneNumber = phoneNumber.length === 10 ? '91' + phoneNumber : phoneNumber;
-    
-    const whatsappLink = `https://wa.me/${fullPhoneNumber}?text=${encodeURIComponent(message)}`;
-    
-    // Show WhatsApp confirmation dialog
-    const confirmed = confirm(`Send WhatsApp confirmation to ${data.residentName}?\n\nPhone: ${data.phone}\n\nMessage: ${message}`);
+    // Optional: Show WhatsApp button
+    const confirmed = confirm(`Send WhatsApp confirmation to ${data.residentName}?\n\nMessage: ${message}`);
     if (confirmed) {
         window.open(whatsappLink, '_blank');
     }
 }
 
 // ==========================================
-// ADMIN UNLOCK WITH PASSWORD
+// ADMIN UNLOCK & LOGOUT
 // ==========================================
 
 function unlockAdmin() {
     const treasurerName = document.getElementById('treasurerName').value.trim();
     const treasurerPassword = document.getElementById('treasurerPassword').value.trim();
     
-    // Validation
     if (!treasurerName) {
         showMessage('Please enter your name', 'error');
         return;
     }
-    
+
     if (!treasurerPassword) {
         showMessage('Please enter password', 'error');
         return;
     }
-    
-    // Check password
+
     if (treasurerPassword !== ADMIN_PASSWORD) {
-        showMessage('❌ Invalid password! Access denied.', 'error');
-        document.getElementById('treasurerPassword').value = '';
+        showMessage('✗ Invalid password', 'error');
         return;
     }
 
-    // Password correct - Unlock admin
     currentTreasurerName = treasurerName;
+    adminMode = true;
     document.getElementById('adminAuthSection').style.display = 'none';
     document.getElementById('adminContent').classList.remove('hidden');
+    document.getElementById('adminLogoutBtn').classList.remove('hidden');
     loadAdminDashboard();
-    showMessage(`✓ Welcome, ${treasurerName}! Admin Panel Unlocked.`, 'success');
+    showMessage(`✓ Welcome, ${treasurerName}!`, 'success');
+}
+
+function logoutAdmin() {
+    const confirmed = confirm('Are you sure you want to logout?');
+    if (!confirmed) return;
+
+    adminMode = false;
+    currentTreasurerName = '';
+    
+    // Reset form
+    document.getElementById('treasurerName').value = '';
+    document.getElementById('treasurerPassword').value = '';
+    
+    // Hide admin content
+    document.getElementById('adminContent').classList.add('hidden');
+    document.getElementById('adminAuthSection').style.display = 'block';
+    document.getElementById('adminLogoutBtn').classList.add('hidden');
+    
+    showMessage('✓ Logged out successfully', 'success');
 }
 
 // ==========================================
