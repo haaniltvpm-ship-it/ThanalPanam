@@ -225,11 +225,13 @@
 
         <!-- Tab 4: Admin Dashboard -->
         <div id="admin" class="tab-content">
-            <h2>⚙️ Admin Dashboard</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>⚙️ Admin Dashboard</h2>
+                <button id="adminLogoutBtn" class="btn-danger hidden" onclick="logoutAdmin()">🚪 Logout</button>
+            </div>
 
-            <!-- Admin Authentication (WITH PASSWORD) -->
-            <div id="adminAuthSection" class="admin-auth-box">
-                <h3>🔐 Admin Authentication</h3>
+            <!-- Admin Authentication (Optional) -->
+            <div id="adminAuthSection">
                 <div class="form-group">
                     <label for="treasurerName">Treasurer Name:</label>
                     <input 
@@ -243,11 +245,10 @@
                     <input 
                         type="password" 
                         id="treasurerPassword" 
-                        placeholder="Enter admin password"
+                        placeholder="Enter password"
                     >
-                    <small style="color: #999; font-size: 11px;">🔑 Contact your association manager for password</small>
                 </div>
-                <button class="btn-primary" onclick="unlockAdmin()">🔓 Unlock Admin Panel</button>
+                <button class="btn-primary" onclick="unlockAdmin()">Unlock Admin Panel</button>
             </div>
 
             <!-- Admin Content (Hidden until unlocked) -->
