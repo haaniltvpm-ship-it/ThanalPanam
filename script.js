@@ -25,10 +25,34 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInitialData();
     setupEventListeners();
     generateMonthYearOptions();
+    setupReportTabListeners();
 });
 
 function setupEventListeners() {
     document.getElementById('paymentForm').addEventListener('submit', handlePaymentSubmit);
+}
+
+function setupReportTabListeners() {
+    const reportTabBtns = document.querySelectorAll('.report-tab-btn');
+    reportTabBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const reportType = this.textContent.toLowerCase().trim();
+            
+            // Map button text to report type
+            if (this.textContent.includes('Summary')) {
+                showReport('summary');
+            } else if (this.textContent.includes('Date-wise')) {
+                showReport('datewise');
+            } else if (this.textContent.includes('Monthly')) {
+                showReport('monthwise');
+            } else if (this.textContent.includes('Name-wise')) {
+                showReport('namewise');
+            } else if (this.textContent.includes('Pending')) {
+                showReport('pending');
+            }
+        });
+    });
 }
 
 async function loadInitialData() {
@@ -67,7 +91,9 @@ function showTab(tabName) {
     if (tabName === 'viewHistory') {
         loadTransactions();
     } else if (tabName === 'admin') {
-        loadAdminDashboard();
+        if (adminMode) {
+            loadAdminDashboard();
+        }
     }
 }
 
@@ -625,9 +651,11 @@ function logoutAdmin() {
 // ==========================================
 
 function showReport(reportType) {
+    console.log('Showing report:', reportType);
+    
     // Hide all reports
     document.querySelectorAll('.report-section').forEach(section => {
-        section.classList.remove('active');
+        section.classList.add('hidden');
     });
 
     // Remove active class from all buttons
@@ -636,8 +664,13 @@ function showReport(reportType) {
     });
 
     // Show selected report
-    document.getElementById(reportType + 'Report').classList.add('active');
-    event.target.classList.add('active');
+    const reportElement = document.getElementById(reportType + 'Report');
+    if (reportElement) {
+        reportElement.classList.remove('hidden');
+    }
+    
+    // Mark button as active
+    event.currentTarget.classList.add('active');
 
     // Load report data
     if (reportType === 'datewise') {
@@ -646,6 +679,8 @@ function showReport(reportType) {
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         document.getElementById('reportStartDate').valueAsDate = firstDay;
         document.getElementById('reportEndDate').valueAsDate = today;
+    } else if (reportType === 'pending') {
+        displayPendingPayments();
     }
 }
 
