@@ -75,7 +75,10 @@ function showTab(tabName) {
 async function loadResidents() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getResidents`);
-        const residents = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const residents = result.data || result;
         allResidents = residents;
 
         // Update resident select boxes
@@ -185,21 +188,24 @@ function generateMonthYearOptions() {
 async function loadDonationPurposes() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getDonationPurposes`);
-        donationPurposes = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const purposes = result.data || result;
 
         const select = document.getElementById('donationPurpose');
         while (select.options.length > 1) {
             select.remove(1);
         }
 
-        donationPurposes.forEach(purpose => {
+        purposes.forEach(purpose => {
             const option = document.createElement('option');
             option.value = purpose;
             option.textContent = purpose;
             select.appendChild(option);
         });
 
-        console.log(`Loaded ${donationPurposes.length} donation purposes`);
+        console.log(`Loaded ${purposes.length} donation purposes`);
     } catch (error) {
         console.error('Error loading donation purposes:', error);
     }
@@ -329,8 +335,12 @@ async function handlePaymentSubmit(e) {
 async function loadTransactions() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions`);
-        allTransactions = await response.json();
-        displayTransactions(allTransactions);
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const transactions = result.data || result;
+        allTransactions = transactions;
+        displayTransactions(transactions);
     } catch (error) {
         console.error('Error loading transactions:', error);
     }
@@ -401,14 +411,17 @@ async function getBalance() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getResidentBalance&name=${encodeURIComponent(name)}`);
         const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const data = result.data || result;
 
-        if (result.name) {
-            document.getElementById('balanceName').textContent = result.name;
-            document.getElementById('balanceTotalFees').textContent = parseFloat(result.totalMonthlyFees).toFixed(2);
-            document.getElementById('balanceVerifiedFees').textContent = parseFloat(result.verifiedMonthlyFees).toFixed(2);
-            document.getElementById('balanceTotalDonations').textContent = parseFloat(result.totalDonations).toFixed(2);
-            document.getElementById('balanceVerifiedDonations').textContent = parseFloat(result.verifiedDonations).toFixed(2);
-            document.getElementById('balanceTotal').textContent = parseFloat(result.total).toFixed(2);
+        if (data.name) {
+            document.getElementById('balanceName').textContent = data.name;
+            document.getElementById('balanceTotalFees').textContent = parseFloat(data.totalMonthlyFees).toFixed(2);
+            document.getElementById('balanceVerifiedFees').textContent = parseFloat(data.verifiedMonthlyFees).toFixed(2);
+            document.getElementById('balanceTotalDonations').textContent = parseFloat(data.totalDonations).toFixed(2);
+            document.getElementById('balanceVerifiedDonations').textContent = parseFloat(data.verifiedDonations).toFixed(2);
+            document.getElementById('balanceTotal').textContent = parseFloat(data.total).toFixed(2);
             document.getElementById('balanceResult').classList.remove('hidden');
         } else {
             showMessage('Resident not found', 'error');
@@ -426,7 +439,10 @@ async function getBalance() {
 async function loadAdminDashboard() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getAdminDashboard`);
-        const dashboard = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const dashboard = result.data || result;
 
         document.getElementById('dashTotalAmount').textContent = '₹' + parseFloat(dashboard.totalAmount).toFixed(2);
         document.getElementById('dashVerifiedAmount').textContent = '₹' + parseFloat(dashboard.verifiedAmount).toFixed(2);
@@ -609,7 +625,10 @@ async function loadDatewiseReport() {
 
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getDatewiseReport&startDate=${startDate}&endDate=${endDate}`);
-        const report = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Date</th><th>Total (₹)</th><th>Count</th><th>Verified</th></tr></thead><tbody>';
         
@@ -637,7 +656,10 @@ async function loadDatewiseReport() {
 async function loadMonthwiseReport() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getMonthwiseReport`);
-        const report = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Month</th><th>Total (₹)</th><th>Count</th></tr></thead><tbody>';
         
@@ -663,7 +685,10 @@ async function loadMonthwiseReport() {
 async function loadNamewiseReport() {
     try {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getNamewiseReport`);
-        const report = await response.json();
+        const result = await response.json();
+        
+        // FIX: Extract data from the response object
+        const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Name</th><th>Monthly Fees (₹)</th><th>Donations (₹)</th><th>Total (₹)</th></tr></thead><tbody>';
         
