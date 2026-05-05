@@ -29,7 +29,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupEventListeners() {
-    document.getElementById('paymentForm').addEventListener('submit', handlePaymentSubmit);
+    const paymentForm = document.getElementById('paymentForm');
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', handlePaymentSubmit);
+    }
+    
+    // Add hidden phone field to form
+    if (paymentForm) {
+        const phoneInput = document.createElement('input');
+        phoneInput.type = 'hidden';
+        phoneInput.id = 'residentPhone';
+        paymentForm.appendChild(phoneInput);
+    }
 }
 
 function setupReportTabListeners() {
@@ -72,7 +83,12 @@ function showTab(tabName) {
     buttons.forEach(btn => btn.classList.remove('active'));
 
     // Show selected tab
-    document.getElementById(tabName).classList.add('active');
+    const selectedTab = document.getElementById(tabName);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Add active class to clicked button
     event.target.closest('.tab-btn').classList.add('active');
 
     // Load data for relevant tabs
@@ -92,7 +108,7 @@ async function loadResidents() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getResidents`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const residents = result.data || result;
         allResidents = residents;
 
@@ -109,6 +125,8 @@ async function loadResidents() {
 
 function populateResidentSelect(selectId, residents) {
     const select = document.getElementById(selectId);
+    if (!select) return;
+    
     const currentValue = select.value;
     
     // Keep the first empty option
@@ -133,6 +151,8 @@ function populateResidentSelect(selectId, residents) {
 
 function onResidentSelected() {
     const select = document.getElementById('residentName');
+    if (!select) return;
+    
     const selectedOption = select.options[select.selectedIndex];
     
     if (selectedOption.value) {
@@ -141,14 +161,20 @@ function onResidentSelected() {
         const address = selectedOption.dataset.address || '';
         
         const infoText = document.getElementById('residentInfo');
-        if (phone) {
+        if (infoText && phone) {
             infoText.textContent = `📱 ${phone}`;
         }
         
         // Store phone for later use
-        document.getElementById('residentPhone').value = phone;
+        const phoneField = document.getElementById('residentPhone');
+        if (phoneField) {
+            phoneField.value = phone;
+        }
     } else {
-        document.getElementById('residentInfo').textContent = '';
+        const infoText = document.getElementById('residentInfo');
+        if (infoText) {
+            infoText.textContent = '';
+        }
     }
 }
 
@@ -160,6 +186,8 @@ function onPaymentTypeChanged() {
     const type = document.getElementById('paymentType').value;
     const monthYearGroup = document.getElementById('monthYearGroup');
     const purposeGroup = document.getElementById('purposeGroup');
+
+    if (!monthYearGroup || !purposeGroup) return;
 
     if (type === 'Monthly Fee') {
         monthYearGroup.classList.remove('hidden');
@@ -179,6 +207,8 @@ function onPaymentTypeChanged() {
 
 function generateMonthYearOptions() {
     const select = document.getElementById('monthYear');
+    if (!select) return;
+    
     const today = new Date();
     
     // Generate options for past 12 months and next 3 months
@@ -205,10 +235,12 @@ async function loadDonationPurposes() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getDonationPurposes`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const purposes = result.data || result;
 
         const select = document.getElementById('donationPurpose');
+        if (!select) return;
+        
         while (select.options.length > 1) {
             select.remove(1);
         }
@@ -234,6 +266,8 @@ function previewFile() {
     const file = document.getElementById('paymentSlip').files[0];
     const preview = document.getElementById('filePreview');
     
+    if (!preview) return;
+    
     if (!file) {
         preview.innerHTML = '';
         return;
@@ -258,15 +292,6 @@ function previewFile() {
     } else {
         preview.innerHTML = `<p>📎 ${file.name}</p>`;
     }
-}
-
-// Add hidden phone field to form
-const paymentForm = document.getElementById('paymentForm');
-if (paymentForm) {
-    const phoneInput = document.createElement('input');
-    phoneInput.type = 'hidden';
-    phoneInput.id = 'residentPhone';
-    paymentForm.appendChild(phoneInput);
 }
 
 // ==========================================
@@ -328,8 +353,12 @@ async function handlePaymentSubmit(e) {
         if (result.success) {
             showMessage(`✓ Payment recorded successfully! Transaction ID: ${result.data.transactionId}`, 'success', 'formMessage');
             document.getElementById('paymentForm').reset();
-            document.getElementById('residentInfo').textContent = '';
-            document.getElementById('filePreview').innerHTML = '';
+            
+            const infoText = document.getElementById('residentInfo');
+            if (infoText) infoText.textContent = '';
+            
+            const filePreview = document.getElementById('filePreview');
+            if (filePreview) filePreview.innerHTML = '';
             
             // Reload data
             await loadTransactions();
@@ -352,7 +381,7 @@ async function loadTransactions() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const transactions = result.data || result;
         allTransactions = transactions;
         displayTransactions(transactions);
@@ -363,6 +392,8 @@ async function loadTransactions() {
 
 function displayTransactions(transactions) {
     const tbody = document.querySelector('#transactionTable tbody');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
 
     if (transactions.length === 0) {
@@ -393,6 +424,9 @@ function filterTable() {
     const filterName = document.getElementById('filterName').value.toUpperCase();
     const filterStatus = document.getElementById('filterStatus').value;
     const table = document.getElementById('transactionTable');
+    
+    if (!table) return;
+    
     const rows = table.getElementsByTagName('tr');
 
     for (let i = 1; i < rows.length; i++) {
@@ -427,17 +461,30 @@ async function getBalance() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getResidentBalance&name=${encodeURIComponent(name)}`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const data = result.data || result;
 
         if (data.name) {
-            document.getElementById('balanceName').textContent = data.name;
-            document.getElementById('balanceTotalFees').textContent = parseFloat(data.totalMonthlyFees).toFixed(2);
-            document.getElementById('balanceVerifiedFees').textContent = parseFloat(data.verifiedMonthlyFees).toFixed(2);
-            document.getElementById('balanceTotalDonations').textContent = parseFloat(data.totalDonations).toFixed(2);
-            document.getElementById('balanceVerifiedDonations').textContent = parseFloat(data.verifiedDonations).toFixed(2);
-            document.getElementById('balanceTotal').textContent = parseFloat(data.total).toFixed(2);
-            document.getElementById('balanceResult').classList.remove('hidden');
+            const balanceName = document.getElementById('balanceName');
+            if (balanceName) balanceName.textContent = data.name;
+            
+            const balanceTotalFees = document.getElementById('balanceTotalFees');
+            if (balanceTotalFees) balanceTotalFees.textContent = parseFloat(data.totalMonthlyFees).toFixed(2);
+            
+            const balanceVerifiedFees = document.getElementById('balanceVerifiedFees');
+            if (balanceVerifiedFees) balanceVerifiedFees.textContent = parseFloat(data.verifiedMonthlyFees).toFixed(2);
+            
+            const balanceTotalDonations = document.getElementById('balanceTotalDonations');
+            if (balanceTotalDonations) balanceTotalDonations.textContent = parseFloat(data.totalDonations).toFixed(2);
+            
+            const balanceVerifiedDonations = document.getElementById('balanceVerifiedDonations');
+            if (balanceVerifiedDonations) balanceVerifiedDonations.textContent = parseFloat(data.verifiedDonations).toFixed(2);
+            
+            const balanceTotal = document.getElementById('balanceTotal');
+            if (balanceTotal) balanceTotal.textContent = parseFloat(data.total).toFixed(2);
+            
+            const balanceResult = document.getElementById('balanceResult');
+            if (balanceResult) balanceResult.classList.remove('hidden');
         } else {
             showMessage('Resident not found', 'error');
         }
@@ -456,16 +503,26 @@ async function loadAdminDashboard() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getAdminDashboard`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const dashboard = result.data || result;
 
-        document.getElementById('dashTotalAmount').textContent = '₹' + parseFloat(dashboard.totalAmount).toFixed(2);
-        document.getElementById('dashVerifiedAmount').textContent = '₹' + parseFloat(dashboard.verifiedAmount).toFixed(2);
-        document.getElementById('dashPendingAmount').textContent = '₹' + parseFloat(dashboard.pendingAmount).toFixed(2);
+        const dashTotalAmount = document.getElementById('dashTotalAmount');
+        if (dashTotalAmount) dashTotalAmount.textContent = '₹' + parseFloat(dashboard.totalAmount).toFixed(2);
+        
+        const dashVerifiedAmount = document.getElementById('dashVerifiedAmount');
+        if (dashVerifiedAmount) dashVerifiedAmount.textContent = '₹' + parseFloat(dashboard.verifiedAmount).toFixed(2);
+        
+        const dashPendingAmount = document.getElementById('dashPendingAmount');
+        if (dashPendingAmount) dashPendingAmount.textContent = '₹' + parseFloat(dashboard.pendingAmount).toFixed(2);
 
-        document.getElementById('statTotalTxn').textContent = dashboard.totalTransactions;
-        document.getElementById('statVerifiedTxn').textContent = dashboard.verifiedTransactions;
-        document.getElementById('statPendingTxn').textContent = dashboard.pendingTransactions;
+        const statTotalTxn = document.getElementById('statTotalTxn');
+        if (statTotalTxn) statTotalTxn.textContent = dashboard.totalTransactions;
+        
+        const statVerifiedTxn = document.getElementById('statVerifiedTxn');
+        if (statVerifiedTxn) statVerifiedTxn.textContent = dashboard.verifiedTransactions;
+        
+        const statPendingTxn = document.getElementById('statPendingTxn');
+        if (statPendingTxn) statPendingTxn.textContent = dashboard.pendingTransactions;
 
         displayPendingPayments();
     } catch (error) {
@@ -478,6 +535,8 @@ function displayPendingPayments() {
     const pending = allTransactions.filter(t => t.status === 'Pending');
     const container = document.getElementById('pendingPaymentsContent');
     
+    if (!container) return;
+    
     if (pending.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 20px;">✓ All payments verified!</p>';
         return;
@@ -485,13 +544,21 @@ function displayPendingPayments() {
 
     let html = '<div class="pending-list">';
     pending.forEach(trans => {
+        // Safely escape data for use in onclick attribute
+        const safeTransId = (trans.transactionId || '').replace(/'/g, "&#39;");
+        const safeName = (trans.name || '').replace(/'/g, "&#39;");
+        const safeAmount = (trans.amount || '0').toString().replace(/'/g, "&#39;");
+        const safeType = (trans.type || '').replace(/'/g, "&#39;");
+        const safeDate = (trans.date || '').replace(/'/g, "&#39;");
+        const safePhone = (trans.phone || '').replace(/'/g, "&#39;");
+        
         html += `
             <div class="pending-item">
                 <div class="pending-info">
                     <p><strong>${trans.name}</strong> - ₹${parseFloat(trans.amount).toFixed(2)}</p>
                     <p style="font-size: 12px; color: #666;">${trans.type} • ${trans.date}</p>
                 </div>
-                <button class="btn-success" onclick="openVerificationModal('${trans.transactionId}', '${trans.name}', '${trans.amount}', '${trans.type}', '${trans.date}', '${trans.phone}')">
+                <button class="btn-success" onclick="openVerificationModal('${safeTransId}', '${safeName}', '${safeAmount}', '${safeType}', '${safeDate}', '${safePhone}')">
                     ✓ Verify
                 </button>
             </div>
@@ -502,15 +569,30 @@ function displayPendingPayments() {
 }
 
 // ==========================================
-// VERIFICATION MODAL
+// VERIFICATION MODAL - FIXED
 // ==========================================
 
 function openVerificationModal(txnId, name, amount, type, date, phone) {
-    document.getElementById('modalTxnId').textContent = txnId;
-    document.getElementById('modalTxnName').textContent = name;
-    document.getElementById('modalTxnAmount').textContent = amount;
-    document.getElementById('modalTxnType').textContent = type;
-    document.getElementById('modalTxnDate').textContent = date;
+    console.log('Opening verification modal for:', txnId);
+    
+    // Ensure modal elements exist and set their values safely
+    const modalTxnId = document.getElementById('modalTxnId');
+    const modalTxnName = document.getElementById('modalTxnName');
+    const modalTxnAmount = document.getElementById('modalTxnAmount');
+    const modalTxnType = document.getElementById('modalTxnType');
+    const modalTxnDate = document.getElementById('modalTxnDate');
+    
+    if (!modalTxnId || !modalTxnName || !modalTxnAmount || !modalTxnType || !modalTxnDate) {
+        console.error('Modal elements not found in DOM');
+        showMessage('Error: Modal elements not initialized', 'error');
+        return;
+    }
+    
+    modalTxnId.textContent = txnId || '';
+    modalTxnName.textContent = name || '';
+    modalTxnAmount.textContent = amount || '0';
+    modalTxnType.textContent = type || '';
+    modalTxnDate.textContent = date || '';
 
     currentVerificationModal = {
         transactionId: txnId,
@@ -519,13 +601,26 @@ function openVerificationModal(txnId, name, amount, type, date, phone) {
         phone: phone
     };
 
-    document.getElementById('verificationModal').classList.remove('hidden');
-    document.getElementById('modalOverlay').classList.remove('hidden');
+    const modal = document.getElementById('verificationModal');
+    const overlay = document.getElementById('modalOverlay');
+    
+    if (modal && overlay) {
+        modal.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        console.log('Modal opened successfully');
+    } else {
+        console.error('Modal or overlay element not found');
+        showMessage('Error: Modal not found', 'error');
+    }
 }
 
 function closeVerificationModal() {
-    document.getElementById('verificationModal').classList.add('hidden');
-    document.getElementById('modalOverlay').classList.add('hidden');
+    const modal = document.getElementById('verificationModal');
+    const overlay = document.getElementById('modalOverlay');
+    
+    if (modal) modal.classList.add('hidden');
+    if (overlay) overlay.classList.add('hidden');
+    
     currentVerificationModal = {};
 }
 
@@ -557,8 +652,8 @@ async function confirmVerification() {
             await loadAdminDashboard();
             updateLastUpdate();
 
-            // Send WhatsApp notification
-            if (result.data.phone) {
+            // Send WhatsApp notification option
+            if (result.data && result.data.phone) {
                 showWhatsAppOption(result.data);
             }
         } else {
@@ -582,7 +677,7 @@ function showWhatsAppOption(data) {
 }
 
 // ==========================================
-// ADMIN UNLOCK & LOGOUT
+// ADMIN UNLOCK & LOGOUT - FIXED
 // ==========================================
 
 function unlockAdmin() {
@@ -606,9 +701,15 @@ function unlockAdmin() {
 
     currentTreasurerName = treasurerName;
     adminMode = true;
-    document.getElementById('adminAuthSection').style.display = 'none';
-    document.getElementById('adminContent').classList.remove('hidden');
-    document.getElementById('adminLogoutBtn').style.display = 'block';
+    
+    const authSection = document.getElementById('adminAuthSection');
+    const adminContent = document.getElementById('adminContent');
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    
+    if (authSection) authSection.style.display = 'none';
+    if (adminContent) adminContent.classList.remove('hidden');
+    if (logoutBtn) logoutBtn.style.display = 'block';
+    
     loadAdminDashboard();
     showMessage(`✓ Welcome, ${treasurerName}!`, 'success');
 }
@@ -621,19 +722,26 @@ function logoutAdmin() {
     currentTreasurerName = '';
     
     // Reset form
-    document.getElementById('treasurerName').value = '';
-    document.getElementById('treasurerPassword').value = '';
+    const treasurerName = document.getElementById('treasurerName');
+    if (treasurerName) treasurerName.value = '';
+    
+    const treasurerPassword = document.getElementById('treasurerPassword');
+    if (treasurerPassword) treasurerPassword.value = '';
     
     // Hide admin content
-    document.getElementById('adminContent').classList.add('hidden');
-    document.getElementById('adminAuthSection').style.display = 'block';
-    document.getElementById('adminLogoutBtn').style.display = 'none';
+    const adminContent = document.getElementById('adminContent');
+    const authSection = document.getElementById('adminAuthSection');
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    
+    if (adminContent) adminContent.classList.add('hidden');
+    if (authSection) authSection.style.display = 'block';
+    if (logoutBtn) logoutBtn.style.display = 'none';
     
     showMessage('✓ Logged out successfully', 'success');
 }
 
 // ==========================================
-// REPORT FUNCTIONS - FIXED
+// REPORT FUNCTIONS
 // ==========================================
 
 function showReport(reportType) {
@@ -667,8 +775,10 @@ function showReport(reportType) {
     if (reportType === 'datewise') {
         const today = new Date();
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        document.getElementById('reportStartDate').valueAsDate = firstDay;
-        document.getElementById('reportEndDate').valueAsDate = today;
+        const reportStartDate = document.getElementById('reportStartDate');
+        const reportEndDate = document.getElementById('reportEndDate');
+        if (reportStartDate) reportStartDate.valueAsDate = firstDay;
+        if (reportEndDate) reportEndDate.valueAsDate = today;
     } else if (reportType === 'pending') {
         displayPendingPayments();
     }
@@ -687,7 +797,7 @@ async function loadDatewiseReport() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getDatewiseReport&startDate=${startDate}&endDate=${endDate}`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Date</th><th>Total (₹)</th><th>Count</th><th>Verified</th></tr></thead><tbody>';
@@ -706,7 +816,8 @@ async function loadDatewiseReport() {
         html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td><td>${totalVerified}</td></tr>`;
         html += '</tbody></table>';
 
-        document.getElementById('datewiseReportContent').innerHTML = html;
+        const datewiseReportContent = document.getElementById('datewiseReportContent');
+        if (datewiseReportContent) datewiseReportContent.innerHTML = html;
     } catch (error) {
         console.error('Error loading date-wise report:', error);
         showMessage('Error loading report', 'error');
@@ -718,7 +829,7 @@ async function loadMonthwiseReport() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getMonthwiseReport`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Month</th><th>Total (₹)</th><th>Count</th></tr></thead><tbody>';
@@ -735,7 +846,8 @@ async function loadMonthwiseReport() {
         html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td></tr>`;
         html += '</tbody></table>';
 
-        document.getElementById('monthwiseReportContent').innerHTML = html;
+        const monthwiseReportContent = document.getElementById('monthwiseReportContent');
+        if (monthwiseReportContent) monthwiseReportContent.innerHTML = html;
     } catch (error) {
         console.error('Error loading month-wise report:', error);
         showMessage('Error loading report', 'error');
@@ -747,7 +859,7 @@ async function loadNamewiseReport() {
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getNamewiseReport`);
         const result = await response.json();
         
-        // FIX: Extract data from the response object
+        // Extract data from the response object
         const report = result.data || result;
 
         let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Name</th><th>Monthly Fees (₹)</th><th>Donations (₹)</th><th>Total (₹)</th></tr></thead><tbody>';
@@ -766,7 +878,8 @@ async function loadNamewiseReport() {
         html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalFees.toFixed(2)}</td><td>₹${totalDonations.toFixed(2)}</td><td>₹${totalSum.toFixed(2)}</td></tr>`;
         html += '</tbody></table>';
 
-        document.getElementById('namewiseReportContent').innerHTML = html;
+        const namewiseReportContent = document.getElementById('namewiseReportContent');
+        if (namewiseReportContent) namewiseReportContent.innerHTML = html;
     } catch (error) {
         console.error('Error loading name-wise report:', error);
         showMessage('Error loading report', 'error');
@@ -813,7 +926,10 @@ function showMessage(message, type, elementId = 'formMessage') {
 
 function updateLastUpdate() {
     const now = new Date();
-    document.getElementById('lastUpdate').textContent = now.toLocaleString('en-IN');
+    const lastUpdate = document.getElementById('lastUpdate');
+    if (lastUpdate) {
+        lastUpdate.textContent = now.toLocaleString('en-IN');
+    }
 }
 
 function viewTransactionDetails(txnId) {
