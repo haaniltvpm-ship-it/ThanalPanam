@@ -863,7 +863,7 @@ footer p {
    ========================================== */
 
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 .mt-10 {
