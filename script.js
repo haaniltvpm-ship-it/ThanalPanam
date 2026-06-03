@@ -3,7 +3,7 @@
 // ==========================================
 
 // Configuration - REPLACE WITH YOUR APPS SCRIPT DEPLOYMENT URL
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxUOh91TbNs3b4glrglw3t846EzCMyoD0cXWFMojiNx3XMe17ou5Jk1HX1HmTvdn5kkAw/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz54khRUfJddJKPq5GC_lif9yM9IVIOXZMJ0upXhgVgkHOs5EYtajfxxoUgEuJfSbKPYg/exec";
 
 // Admin Password
 const ADMIN_PASSWORD = "admin123";
@@ -343,6 +343,31 @@ async function handlePaymentSubmit(e) {
         formData.append('notes', notes);
         formData.append('residentPhone', residentPhone);
 
+        // Handle file upload if present
+        const fileInput = document.getElementById('paymentSlip');
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Data = event.target.result.split(',')[1];
+                formData.append('receiptData', base64Data);
+                formData.append('receiptFileName', file.name);
+                formData.append('receiptMimeType', file.type);
+                
+                await submitTransaction(formData);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            await submitTransaction(formData);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error: ' + error, 'error', 'formMessage');
+    }
+}
+
+async function submitTransaction(formData) {
+    try {
         const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             body: formData
@@ -544,21 +569,14 @@ function displayPendingPayments() {
 
     let html = '<div class="pending-list">';
     pending.forEach(trans => {
-        // Safely escape data for use in onclick attribute
-        const safeTransId = (trans.transactionId || '').replace(/'/g, "&#39;");
-        const safeName = (trans.name || '').replace(/'/g, "&#39;");
-        const safeAmount = (trans.amount || '0').toString().replace(/'/g, "&#39;");
-        const safeType = (trans.type || '').replace(/'/g, "&#39;");
-        const safeDate = (trans.date || '').replace(/'/g, "&#39;");
-        const safePhone = (trans.phone || '').replace(/'/g, "&#39;");
-        
         html += `
             <div class="pending-item">
                 <div class="pending-info">
                     <p><strong>${trans.name}</strong> - ₹${parseFloat(trans.amount).toFixed(2)}</p>
                     <p style="font-size: 12px; color: #666;">${trans.type} • ${trans.date}</p>
+                    ${trans.receiptUrl ? `<p style="font-size: 11px;"><a href="${trans.receiptUrl}" target="_blank">📎 View Receipt</a></p>` : ''}
                 </div>
-                <button class="btn-success" onclick="openVerificationModal('${safeTransId}', '${safeName}', '${safeAmount}', '${safeType}', '${safeDate}', '${safePhone}')">
+                <button class="btn-success" onclick="openVerificationModal('${trans.transactionId}', '${trans.name}', '${trans.amount}', '${trans.type}', '${trans.date}', '${trans.phone}')">
                     ✓ Verify
                 </button>
             </div>
@@ -800,20 +818,26 @@ async function loadDatewiseReport() {
         // Extract data from the response object
         const report = result.data || result;
 
-        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Date</th><th>Total (₹)</th><th>Count</th><th>Verified</th></tr></thead><tbody>';
+        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Date</th><th>Total (₹)</th><th>Count</th><th>Verified</th><th>Details</th></tr></thead><tbody>';
         
         let totalSum = 0;
         let totalCount = 0;
         let totalVerified = 0;
 
         for (const [date, data] of Object.entries(report)) {
-            html += `<tr><td>${date}</td><td>₹${parseFloat(data.total).toFixed(2)}</td><td>${data.count}</td><td>${data.verified}</td></tr>`;
+            html += `<tr>
+                <td>${date}</td>
+                <td>₹${parseFloat(data.total).toFixed(2)}</td>
+                <td>${data.count}</td>
+                <td>${data.verified}</td>
+                <td><button class="btn-sm" onclick="showDatewiseDetails('${date}', '${startDate}', '${endDate}')">View</button></td>
+            </tr>`;
             totalSum += data.total;
             totalCount += data.count;
             totalVerified += data.verified;
         }
 
-        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td><td>${totalVerified}</td></tr>`;
+        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td><td>${totalVerified}</td><td></td></tr>`;
         html += '</tbody></table>';
 
         const datewiseReportContent = document.getElementById('datewiseReportContent');
@@ -821,6 +845,41 @@ async function loadDatewiseReport() {
     } catch (error) {
         console.error('Error loading date-wise report:', error);
         showMessage('Error loading report', 'error');
+    }
+}
+
+function showDatewiseDetails(date, startDate, endDate) {
+    const detailsArray = allTransactions.filter(t => {
+        const txnDate = new Date(t.date.split('-').reverse().join('-'));
+        const targetDate = new Date(date.split('-').reverse().join('-'));
+        return txnDate.toDateString() === targetDate.toDateString();
+    });
+
+    let html = `<h4>Transactions on ${date}</h4>`;
+    html += '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr><th>Name</th><th>Amount</th><th>Type</th><th>Status</th><th>Receipt</th></tr></thead><tbody>';
+
+    detailsArray.forEach(trans => {
+        html += `<tr>
+            <td>${trans.name}</td>
+            <td>₹${parseFloat(trans.amount).toFixed(2)}</td>
+            <td>${trans.type}</td>
+            <td>${trans.status}</td>
+            <td>${trans.receiptUrl ? `<a href="${trans.receiptUrl}" target="_blank">📎 View</a>` : '-'}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.backgroundColor = '#f9fafb';
+    container.style.padding = '15px';
+    container.style.borderRadius = '8px';
+    container.style.marginTop = '15px';
+
+    const datewiseReportContent = document.getElementById('datewiseReportContent');
+    if (datewiseReportContent) {
+        datewiseReportContent.appendChild(container);
     }
 }
 
@@ -832,18 +891,23 @@ async function loadMonthwiseReport() {
         // Extract data from the response object
         const report = result.data || result;
 
-        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Month</th><th>Total (₹)</th><th>Count</th></tr></thead><tbody>';
+        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Month</th><th>Total (₹)</th><th>Count</th><th>Details</th></tr></thead><tbody>';
         
         let totalSum = 0;
         let totalCount = 0;
 
         for (const [month, data] of Object.entries(report)) {
-            html += `<tr><td>${month}</td><td>₹${parseFloat(data.total).toFixed(2)}</td><td>${data.count}</td></tr>`;
+            html += `<tr>
+                <td>${month}</td>
+                <td>₹${parseFloat(data.total).toFixed(2)}</td>
+                <td>${data.count}</td>
+                <td><button class="btn-sm" onclick="showMonthwiseDetails('${month}')">View</button></td>
+            </tr>`;
             totalSum += data.total;
             totalCount += data.count;
         }
 
-        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td></tr>`;
+        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalSum.toFixed(2)}</td><td>${totalCount}</td><td></td></tr>`;
         html += '</tbody></table>';
 
         const monthwiseReportContent = document.getElementById('monthwiseReportContent');
@@ -851,6 +915,39 @@ async function loadMonthwiseReport() {
     } catch (error) {
         console.error('Error loading month-wise report:', error);
         showMessage('Error loading report', 'error');
+    }
+}
+
+function showMonthwiseDetails(month) {
+    const detailsArray = allTransactions.filter(t => t.monthYear === month && t.status === 'Verified' && t.type === 'Monthly Fee');
+
+    let html = `<h4>Monthly Fee Collection - ${month}</h4>`;
+    html += '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr><th>Resident Name</th><th>Amount</th><th>Status</th><th>Receipt</th></tr></thead><tbody>';
+
+    let totalAmount = 0;
+    detailsArray.forEach(trans => {
+        totalAmount += parseFloat(trans.amount);
+        html += `<tr>
+            <td>${trans.name}</td>
+            <td>₹${parseFloat(trans.amount).toFixed(2)}</td>
+            <td>${trans.status}</td>
+            <td>${trans.receiptUrl ? `<a href="${trans.receiptUrl}" target="_blank">📎 View</a>` : '-'}</td>
+        </tr>`;
+    });
+
+    html += `<tr style="font-weight: bold;"><td>TOTAL</td><td>₹${totalAmount.toFixed(2)}</td><td></td><td></td></tr>`;
+    html += '</tbody></table>';
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.backgroundColor = '#f9fafb';
+    container.style.padding = '15px';
+    container.style.borderRadius = '8px';
+    container.style.marginTop = '15px';
+
+    const monthwiseReportContent = document.getElementById('monthwiseReportContent');
+    if (monthwiseReportContent) {
+        monthwiseReportContent.appendChild(container);
     }
 }
 
@@ -862,20 +959,26 @@ async function loadNamewiseReport() {
         // Extract data from the response object
         const report = result.data || result;
 
-        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Name</th><th>Monthly Fees (₹)</th><th>Donations (₹)</th><th>Total (₹)</th></tr></thead><tbody>';
+        let html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr><th>Name</th><th>Monthly Fees (₹)</th><th>Donations (₹)</th><th>Total (₹)</th><th>Details</th></tr></thead><tbody>';
         
         let totalFees = 0;
         let totalDonations = 0;
         let totalSum = 0;
 
         for (const [name, data] of Object.entries(report)) {
-            html += `<tr><td>${name}</td><td>₹${parseFloat(data.monthlyFees).toFixed(2)}</td><td>₹${parseFloat(data.donations).toFixed(2)}</td><td>₹${parseFloat(data.total).toFixed(2)}</td></tr>`;
+            html += `<tr>
+                <td>${name}</td>
+                <td>₹${parseFloat(data.monthlyFees).toFixed(2)}</td>
+                <td>₹${parseFloat(data.donations).toFixed(2)}</td>
+                <td>₹${parseFloat(data.total).toFixed(2)}</td>
+                <td><button class="btn-sm" onclick="showNamewiseDetails('${name}')">View</button></td>
+            </tr>`;
             totalFees += data.monthlyFees;
             totalDonations += data.donations;
             totalSum += data.total;
         }
 
-        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalFees.toFixed(2)}</td><td>₹${totalDonations.toFixed(2)}</td><td>₹${totalSum.toFixed(2)}</td></tr>`;
+        html += `<tr style="font-weight: bold; border-top: 2px solid #ccc;"><td>TOTAL</td><td>₹${totalFees.toFixed(2)}</td><td>₹${totalDonations.toFixed(2)}</td><td>₹${totalSum.toFixed(2)}</td><td></td></tr>`;
         html += '</tbody></table>';
 
         const namewiseReportContent = document.getElementById('namewiseReportContent');
@@ -883,6 +986,47 @@ async function loadNamewiseReport() {
     } catch (error) {
         console.error('Error loading name-wise report:', error);
         showMessage('Error loading report', 'error');
+    }
+}
+
+function showNamewiseDetails(name) {
+    const detailsArray = allTransactions.filter(t => t.name === name && t.status === 'Verified');
+
+    let html = `<h4>Transaction Details - ${name}</h4>`;
+    html += '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr><th>Date</th><th>Amount</th><th>Type</th><th>Category</th><th>Receipt</th></tr></thead><tbody>';
+
+    let monthlyFeesTotal = 0;
+    let donationsTotal = 0;
+
+    detailsArray.forEach(trans => {
+        const category = trans.type === 'Monthly Fee' ? trans.monthYear : trans.purpose;
+        if (trans.type === 'Monthly Fee') {
+            monthlyFeesTotal += parseFloat(trans.amount);
+        } else {
+            donationsTotal += parseFloat(trans.amount);
+        }
+        html += `<tr>
+            <td>${trans.date}</td>
+            <td>₹${parseFloat(trans.amount).toFixed(2)}</td>
+            <td>${trans.type}</td>
+            <td>${category}</td>
+            <td>${trans.receiptUrl ? `<a href="${trans.receiptUrl}" target="_blank">📎 View</a>` : '-'}</td>
+        </tr>`;
+    });
+
+    html += `<tr style="font-weight: bold;"><td colspan="2">Monthly Fees: ₹${monthlyFeesTotal.toFixed(2)} | Donations: ₹${donationsTotal.toFixed(2)}</td><td colspan="3">Total: ₹${(monthlyFeesTotal + donationsTotal).toFixed(2)}</td></tr>`;
+    html += '</tbody></table>';
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.backgroundColor = '#f9fafb';
+    container.style.padding = '15px';
+    container.style.borderRadius = '8px';
+    container.style.marginTop = '15px';
+
+    const namewiseReportContent = document.getElementById('namewiseReportContent');
+    if (namewiseReportContent) {
+        namewiseReportContent.appendChild(container);
     }
 }
 
@@ -935,7 +1079,15 @@ function updateLastUpdate() {
 function viewTransactionDetails(txnId) {
     const trans = allTransactions.find(t => t.transactionId === txnId);
     if (trans) {
-        alert(`Transaction Details:\n\nID: ${trans.transactionId}\nName: ${trans.name}\nAmount: ₹${trans.amount}\nType: ${trans.type}\nStatus: ${trans.status}\nDate: ${trans.date}`);
+        let detailsMsg = `Transaction Details:\n\nID: ${trans.transactionId}\nName: ${trans.name}\nAmount: ₹${trans.amount}\nType: ${trans.type}\nStatus: ${trans.status}\nDate: ${trans.date}`;
+        if (trans.receiptUrl) {
+            const confirmed = confirm(detailsMsg + `\n\n📎 View Receipt?`);
+            if (confirmed) {
+                window.open(trans.receiptUrl, '_blank');
+            }
+        } else {
+            alert(detailsMsg);
+        }
     }
 }
 
@@ -973,6 +1125,13 @@ style.textContent = `
     }
     .pending-info p {
         margin: 5px 0;
+    }
+    .pending-info a {
+        color: #0ea5e9;
+        text-decoration: none;
+    }
+    .pending-info a:hover {
+        text-decoration: underline;
     }
     .btn-success {
         padding: 8px 16px;
